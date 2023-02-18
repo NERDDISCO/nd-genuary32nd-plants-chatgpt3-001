@@ -4,7 +4,7 @@ export class Base {
      * Base
      */
     this.canvas = document.querySelector("canvas#nd-output");
-    this.ctx = this.canvas.getContext("2d");
+    this.ctx = this.canvas.getContext("2d", { willReadFrequently: true });
 
     this.resizeCanvasToSquare();
 
