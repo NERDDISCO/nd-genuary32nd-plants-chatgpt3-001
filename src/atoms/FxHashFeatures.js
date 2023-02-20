@@ -1,58 +1,26 @@
 import { inRange } from "../utils/inRange";
 
-export class FxHashFeatures {
-  constructor({
-    amount,
-    wrappings,
-    wrappingRanges,
-    wireframes,
-    wireframeThreshold,
-    envGradientColorStops,
-    // dawt,
-    rotationX,
-    rotationY,
-    rotationZ,
-  }) {
-    const _wrappings = [];
-    const _wireframes = [];
+export function fxHashFeatures(props) {
+  const { plants, baseMs, redrawFactor, redrawInMs } = props;
 
-    for (let i = 0; i < amount; i++) {
-      const wrapping = inRange({
-        currentValue: wrappings[i],
-        ranges: wrappingRanges,
-      });
+  const plantMissing = "nothing here yet"
 
-      _wrappings.push(wrapping);
+  window.$fxhashFeatures = {
+    // name: "nd-genuary32nd-plants-chatgpt3-001",
+    // artist: "NERDDISCO",
+    // web: "nerddis.co/nd-genuary32nd-plants-chatgpt3-001",
+    redrawInMs,
+    plant1: plantMissing,
+    plant2: plantMissing,
+    plant3: plantMissing,
+    plant4: plantMissing,
+    plant6: plantMissing,
+    plant7: plantMissing,
+    plant8: plantMissing,
+  };
 
-      _wireframes.push(wireframes[i] < wireframeThreshold);
-    }
-
-    const amountDots = _wrappings.filter((x) => x === "dots").length;
-    const amountStripes = _wrappings.filter((x) => x === "stripes").length;
-    const amountFxHash = _wrappings.filter((x) => x === "fxhash").length;
-    const amountWireframes = _wireframes.filter((x) => x === true).length;
-
-    window.$fxhashFeatures = {
-      name: "nd-fxhashturnsone-001",
-      // artist: "NERDDISCO",
-      // web: "nerddis.co/nd-fxhashturnsone-001",
-      hash: fxhash,
-      rotationX,
-      rotationY,
-      rotationZ,
-      wrappedInDots: amountDots,
-      wrappedInStripes: amountStripes,
-      wrappedInFxHash: amountFxHash,
-      wireframes: amountWireframes,
-      environment: inRange({
-        currentValue: envGradientColorStops,
-        ranges: [
-          { simple: [2, 5] },
-          { colorful: [6, 15] },
-          { letsParty: [16, 20] },
-        ],
-      }),
-      // ...dawt.globalParameters,
-    };
+  for (let i = 0; i < plants.length; i++) {
+    window.$fxhashFeatures[`plant${i + 1}`] =
+      plants[i] !== undefined ? "<3" : plantMissing;
   }
 }

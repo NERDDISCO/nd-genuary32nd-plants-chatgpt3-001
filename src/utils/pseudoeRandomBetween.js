@@ -29,8 +29,8 @@ export const pseudoRandomBetweenList = (prng, size, min, max, round = true, uniq
 
         iterations++
 
-        if (iterations > 20) {
-          console.log(random)
+        // TODO: Get a real value here
+        if (iterations > 50) {
           iterations = 0
           break
         }

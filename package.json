@@ -1,12 +1,12 @@
 {
-  "name": "nd-fxhashturnsone-001",
+  "name": "nd-genuary32nd-plants-chatgpt3-001",
   "version": "1.0.0",
-  "description": "fxhash turns one and we want to celebrate with an artwork that represents 365 days",
+  "description": "Prompt `Plants` for Genuary32nd 2023, using ChatGPT + Humain",
   "main": "index.js",
   "author": "NERDDISCO",
-  "license": "MIT",
+  "license": "AGPL-3.0",
   "scripts": {
-    "build": "webpack --config ./config/webpack.config.prod.js",
+    "build": "webpack --config ./config/webpack.config.prod.js && cp -r dist/ ../../hugo/nerddis.co/public/nd-genuary32nd-plants-chatgpt3-001/live/",
     "start": "webpack serve --config ./config/webpack.config.dev.js"
   },
   "devDependencies": {
