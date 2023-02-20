@@ -4,7 +4,6 @@ import {
 } from "./../utils/pseudoeRandomBetween";
 import { fxHashFeatures } from "./FxHashFeatures";
 
-
 export default function Plants({ ctx, canvas, prng }) {
   const originalCanvasWidth = 2048;
   const originalCanvasHeight = 2048;
@@ -18,7 +17,7 @@ export default function Plants({ ctx, canvas, prng }) {
   let redrawInMsMax = 50;
 
   const colors = generatePalette(prng.next(), 14);
-  const [
+  let [
     color1,
     color2,
     color3,
@@ -35,7 +34,12 @@ export default function Plants({ ctx, canvas, prng }) {
     colorSun,
   ] = colors;
 
-  const saturation = pseudoRandomBetween(prng.next(), 0.35, 0.55, false);
+  const saturation = pseudoRandomBetween(prng.next(), 15, 25);
+
+  colorSun = changeHsl(colorSun, saturation);
+  colorSky = changeHsl(colorSky, saturation);
+  colorGrass = changeHsl(colorGrass, saturation);
+  colorGround = changeHsl(colorGround, saturation);
 
   // Sun
   const sunRadius = pseudoRandomBetween(prng.next(), 350, 600, false);
@@ -60,14 +64,14 @@ export default function Plants({ ctx, canvas, prng }) {
 
   const stemMaxHeightOverall = pseudoRandomBetween(
     prng.next(),
-    0.5,
+    0.45,
     0.7,
     false
   );
   const stemMaxHeights = pseudoRandomBetweenList(
     prng,
     plantsAmount,
-    0.2,
+    0.35,
     stemMaxHeightOverall,
     false,
     true,
@@ -97,7 +101,7 @@ export default function Plants({ ctx, canvas, prng }) {
     petalRadius: 0,
     petalMaxRadius: 0,
     petalAngle: 0,
-    petalGrowthSpeed: 0
+    petalGrowthSpeed: 0,
   };
 
   // Spread the plants along x equally
@@ -118,6 +122,16 @@ export default function Plants({ ctx, canvas, prng }) {
         i === plantsAmount - 1 && plantsAmount !== 2 && plantsAmount !== 3,
       isTheOne: plantsAmount === 1,
     });
+  }
+
+  // Change the position of the last plant so that it's behind the plants in the middle
+  if (plants.length > 3) {
+    const lastPlant = {...plants[plants.length - 1]}
+
+    // Add the last plant into second position
+    plants.splice(1, 0, lastPlant)
+    // Remove the last plant
+    plants.pop()
   }
 
   function spreadPlants({ amount }) {
@@ -166,12 +180,12 @@ export default function Plants({ ctx, canvas, prng }) {
     newPlant.petalAmount = petalAmount;
     newPlant.petalAmountThreshold = plantsAmount + petalAmountsMin;
 
-    let leafSizeFactor = 2.5
+    let leafSizeFactor = 2.5;
 
     // Every plant in the middle
     if (!isFirst && !isLast) {
-      newPlant.centerMaxRadius = pseudoRandomBetween(prng.next(), 120, 140);
-      newPlant.petalMaxRadius = pseudoRandomBetween(prng.next(), 120, 130);
+      newPlant.centerMaxRadius = pseudoRandomBetween(prng.next(), 90, 140);
+      newPlant.petalMaxRadius = pseudoRandomBetween(prng.next(), 100, 120);
 
       newPlant.petalAmount = pseudoRandomBetween(
         prng.next(),
@@ -179,19 +193,31 @@ export default function Plants({ ctx, canvas, prng }) {
         plantsAmount + petalAmountsMin
       );
 
-    // Plants very close to the edges
+      // Plants very close to the edges
     } else if ((isFirst || isLast) && !isTheOne) {
-      newPlant.centerMaxRadius = pseudoRandomBetween(prng.next(), 30, 50);
-      newPlant.petalMaxRadius = pseudoRandomBetween(prng.next(), 20, 35);
+      newPlant.centerMaxRadius = pseudoRandomBetween(prng.next(), 35, 45);
+      newPlant.petalMaxRadius = pseudoRandomBetween(prng.next(), 35, 45);
+
+      newPlant.stemMaxHeight = pseudoRandomBetween(
+        prng.next(),
+        0.2,
+        0.3,
+        false
+      );
 
       leafSizeFactor = 1.0;
 
-    // Only one plant exists
+      // Only one plant exists
     } else if (isTheOne) {
       newPlant.centerMaxRadius = pseudoRandomBetween(prng.next(), 150, 170);
       newPlant.petalMaxRadius = pseudoRandomBetween(prng.next(), 150, 160);
 
-      newPlant.stemMaxHeight = pseudoRandomBetween(prng.next(), .4, stemMaxHeightOverall, false)
+      newPlant.stemMaxHeight = pseudoRandomBetween(
+        prng.next(),
+        0.4,
+        stemMaxHeightOverall,
+        false
+      );
 
       newPlant.petalAmount = pseudoRandomBetween(
         prng.next(),
@@ -201,18 +227,21 @@ export default function Plants({ ctx, canvas, prng }) {
 
       // Don't use the threshold when we only have one plant
       newPlant.petalAmountThreshold = 100;
-
     }
 
-    newPlant.stemColor = changeSaturation(
+    newPlant.stemColor = changeHsl
+(
       colorStem,
-      pseudoRandomBetween(prng.next(), 30, 40)
+      pseudoRandomBetween(prng.next(), 30, 40),
+      pseudoRandomBetween(prng.next(), 40, 50)
     );
-    newPlant.centerColor = changeSaturation(
+    newPlant.centerColor = changeHsl
+(
       centerColor,
       pseudoRandomBetween(prng.next(), 60, 80)
     );
-    newPlant.petalColor = changeSaturation(
+    newPlant.petalColor = changeHsl
+(
       petalColor,
       pseudoRandomBetween(prng.next(), 90, 100)
     );
@@ -237,12 +266,7 @@ export default function Plants({ ctx, canvas, prng }) {
       false
     );
 
-    newPlant.leafPosition = pseudoRandomBetween(
-      prng.next(),
-      .65,
-      1,
-      false
-    );
+    newPlant.leafPosition = pseudoRandomBetween(prng.next(), 0.65, 1, false);
 
     newPlant.leafSize = pseudoRandomBetween(
       prng.next(),
@@ -275,17 +299,15 @@ export default function Plants({ ctx, canvas, prng }) {
       drawBackground({ colorGrass, colorGround, colorSky, groundHeight });
       drawSun({ x: sunX, y: 0, radius: sunRadius, colorSun });
 
-      saturationFilter(saturation);
-
       ctx.globalAlpha = 1;
       for (const plant of plants) {
         if (currentTime >= plant.startTime) {
           drawStem(plant, delta);
 
-          let reachedMaxHeight = plant.reachedMaxHeight || false
+          let reachedMaxHeight = plant.reachedMaxHeight || false;
 
           if (reachedMaxHeight) {
-            plant.reachedMaxHeight = true
+            plant.reachedMaxHeight = true;
             ctx.globalAlpha = 0.75;
             drawCirclePetals(plant, delta);
             ctx.globalAlpha = 1;
@@ -323,8 +345,6 @@ export default function Plants({ ctx, canvas, prng }) {
       canvas.width,
       canvas.height * groundHeight
     );
-
-    saturationFilter(0.25);
   }
 
   function drawStem(plant, delta) {
@@ -352,9 +372,8 @@ export default function Plants({ ctx, canvas, prng }) {
         canvas.width
     ) {
       plant.stemHeight += plant.stemGrowthSpeed * delta;
-
     } else {
-      plant.reachedMaxHeight = true
+      plant.reachedMaxHeight = true;
     }
 
     plant.stemHeightFinal = stemHeight;
@@ -441,24 +460,6 @@ export default function Plants({ ctx, canvas, prng }) {
     return palette;
   }
 
-  function saturationFilter(saturation) {
-    let imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-    const data = imageData.data;
-
-    for (let i = 0; i < data.length; i += 4) {
-      let r = data[i];
-      let g = data[i + 1];
-      let b = data[i + 2];
-
-      let gray = (r + g + b) / 3;
-      data[i] = gray + (r - gray) * saturation;
-      data[i + 1] = gray + (g - gray) * saturation;
-      data[i + 2] = gray + (b - gray) * saturation;
-    }
-
-    ctx.putImageData(imageData, 0, 0);
-  }
-
   function getRandomColors(colors) {
     let color1 = colors[Math.floor(prng.next() * colors.length)];
     let color2 = colors[Math.floor(prng.next() * colors.length)];
@@ -470,11 +471,15 @@ export default function Plants({ ctx, canvas, prng }) {
     return [color2, color1];
   }
 
-  function changeSaturation(hslColor, saturationPercent) {
-    const [hue, saturation, lightness] = hslColor
+  function changeHsl(hslColor, saturationPercent, lightnessPercent = undefined) {
+    let [hue, saturation, lightness] = hslColor
       .match(/hsl\(\s*(\d+\.?\d*)\s*,\s*(\d+\.?\d*)%\s*,\s*(\d+\.?\d*)%\s*\)/)
       .slice(1)
       .map(Number);
+
+    if (lightnessPercent !== undefined) {
+      lightness = lightnessPercent
+    }
 
     return `hsl(${hue}, ${saturationPercent}%, ${lightness}%)`;
   }
@@ -506,12 +511,7 @@ export default function Plants({ ctx, canvas, prng }) {
       plant.centerRadius = 0;
 
       // Random *growthSpeed
-      plant.stemGrowthSpeed = pseudoRandomBetween(
-        prng.next(),
-        0.1,
-        0.5,
-        false
-      );
+      plant.stemGrowthSpeed = pseudoRandomBetween(prng.next(), 0.1, 0.5, false);
       plant.centerGrowthSpeed = pseudoRandomBetween(
         prng.next(),
         0.05,
@@ -535,19 +535,19 @@ export default function Plants({ ctx, canvas, prng }) {
 
   console.log(fxhash);
 
-  reset({})
+  reset({});
 
   fxHashFeatures({
-    plants, redrawInMs
+    plants,
+    redrawInMs,
   });
-  console.log("$fxhashFeatures", window.$fxhashFeatures)
+  console.log("$fxhashFeatures", window.$fxhashFeatures);
 
   if (!isFxpreview) {
     setTimeout(redraw, redrawInMs);
   } else {
     setTimeout(() => {
-      fxpreview()
+      fxpreview();
     }, baseMsMax * redrawInMsMax + 1000);
   }
-
 }
