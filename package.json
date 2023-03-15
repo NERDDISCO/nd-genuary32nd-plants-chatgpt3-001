@@ -6,7 +6,7 @@
   "author": "NERDDISCO",
   "license": "AGPL-3.0",
   "scripts": {
-    "build": "webpack --config ./config/webpack.config.prod.js && cp -r dist/ ../../hugo/nerddis.co/public/nd-genuary32nd-plants-chatgpt3-001/live/",
+    "build": "webpack --config ./config/webpack.config.prod.js && cp -r dist/* ../../hugo/nerddis.co/public/nd-genuary32nd-plants-chatgpt3-001/live/",
     "start": "webpack serve --config ./config/webpack.config.dev.js"
   },
   "devDependencies": {
