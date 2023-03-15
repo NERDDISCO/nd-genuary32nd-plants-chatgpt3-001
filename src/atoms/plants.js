@@ -14,8 +14,8 @@ export default function Plants({ ctx, canvas, prng }) {
   let baseMs = 0;
   let baseMsMax = 1000;
   let redrawFactor = 0;
+  let redrawFactorMax = 50;
   let redrawInMs = 0;
-  let redrawInMsMax = 50;
 
   const colors = generatePalette(prng.next(), 14);
   let [
@@ -40,10 +40,7 @@ export default function Plants({ ctx, canvas, prng }) {
 
   const environment = inRange({
     currentValue: lightness,
-    ranges: [
-      { rainbowNight: [25, 26] },
-      { sunnyDay: [26, 65] },
-    ],
+    ranges: [{ rainbowNight: [25, 26] }, { sunnyDay: [26, 65] }],
   });
 
   if (environment === "sunnyDay") {
@@ -55,12 +52,12 @@ export default function Plants({ ctx, canvas, prng }) {
   colorGrass = changeHsl(colorGrass, saturation, lightness);
   colorGround = changeHsl(colorGround, saturation, lightness);
 
-  let colorsRainbow = undefined
+  let colorsRainbow = undefined;
 
   if (environment === "rainbowNight") {
-    colorsRainbow = generateRainbowColors(14)
+    colorsRainbow = generateRainbowColors(14);
     for (let i = 0; i < colorsRainbow.length; i++) {
-      colorsRainbow[i] = changeHsl(colorsRainbow[i], saturation, lightness)
+      colorsRainbow[i] = changeHsl(colorsRainbow[i], saturation, lightness);
     }
   }
 
@@ -88,7 +85,7 @@ export default function Plants({ ctx, canvas, prng }) {
   const stemMaxHeightOverall = pseudoRandomBetween(
     prng.next(),
     0.45,
-    0.7,
+    0.65,
     false
   );
   const stemMaxHeights = pseudoRandomBetweenList(
@@ -119,13 +116,14 @@ export default function Plants({ ctx, canvas, prng }) {
     centerColor: color1,
     centerGrowthSpeed: 0,
     centerRadiusFinal: 0,
+    petalAlpha: 0.75,
     petalColor: color2,
     petalAmount: 0,
     petalRadius: 0,
     petalMaxRadius: 0,
     petalAngle: 0,
     petalGrowthSpeed: 0,
-    isSpecial: false
+    isSpecial: false,
   };
 
   // Spread the plants along x equally
@@ -148,23 +146,38 @@ export default function Plants({ ctx, canvas, prng }) {
     });
   }
 
-  // Change the position of the last plant so that it's behind the plants in the middle
-  if (plants.length > 3) {
-    const lastPlant = {...plants[plants.length - 1]}
-
-    // Add the last plant into second position
-    plants.splice(1, 0, lastPlant)
-    // Remove the last plant
-    plants.pop()
-  }
-
   // Sort plants by height, so that tall plants are in the front
   plants.sort((a, b) => {
-    return a.stemMaxHeight - b.stemMaxHeight
-  })
+    return a.stemMaxHeight - b.stemMaxHeight;
+  });
 
-// TODO: Make sure that special plants are not next to other special plants, so the end result looks more nice
+  rafId = requestAnimationFrame(animate);
 
+  console.log(fxhash);
+
+  reset();
+
+  // Create the features for fxhash
+  fxHashFeatures({
+    plants,
+    redrawInMs,
+    plantsAmount,
+    environment,
+  });
+  console.log("$fxhashFeatures", window.$fxhashFeatures);
+
+  // Redraw after redrawInMs if preview = 0
+  if (!isFxpreview) {
+    setTimeout(redraw, redrawInMs);
+
+    // Don't redraw if preview = 1 and trigger fxpreview() to take a screenshot
+  } else {
+    setTimeout(() => {
+      fxpreview();
+    }, baseMsMax * redrawFactorMax + 1000);
+  }
+
+  // Run scene and draw everything
   function animate(currentTime) {
     let delta = currentTime - previousTime;
     previousTime = currentTime;
@@ -179,10 +192,18 @@ export default function Plants({ ctx, canvas, prng }) {
     } else {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-      drawBackground({ colorGrass, colorGround, colorSky, groundHeight, colors: colorsRainbow });
+      drawBackground({
+        colorGrass,
+        colorGround,
+        colorSky,
+        groundHeight,
+        colors: colorsRainbow,
+      });
       drawSun({ x: sunX, y: 0, radius: sunRadius, colorSun });
 
       ctx.globalAlpha = 1;
+
+      // Draw all plants
       for (const plant of plants) {
         if (currentTime >= plant.startTime) {
           drawStem(plant, delta);
@@ -191,19 +212,23 @@ export default function Plants({ ctx, canvas, prng }) {
 
           if (reachedMaxHeight) {
             plant.reachedMaxHeight = true;
-            ctx.globalAlpha = 0.75;
+
+            ctx.globalAlpha = plant.petalAlpha;
             drawCirclePetals(plant, delta);
             ctx.globalAlpha = 1;
+
             drawCenter(plant, delta);
           }
         }
       }
+
       ctx.globalAlpha = 1;
 
       rafId = requestAnimationFrame(animate);
     }
   }
 
+  // Spread the plants on the ground, so that they are equally apart from each other
   function spreadPlants({ amount }) {
     const data = [];
     const distance = 1.0 / amount;
@@ -217,6 +242,7 @@ export default function Plants({ ctx, canvas, prng }) {
     return data;
   }
 
+  // Generate a plant with random values
   function addPlant({
     plants,
     plantsAmount,
@@ -308,7 +334,7 @@ export default function Plants({ ctx, canvas, prng }) {
       centerColor,
       pseudoRandomBetween(prng.next(), 60, 80)
     );
-    newPlant.petalColor = changeHsl (
+    newPlant.petalColor = changeHsl(
       petalColor,
       pseudoRandomBetween(prng.next(), 90, 100)
     );
@@ -344,14 +370,28 @@ export default function Plants({ ctx, canvas, prng }) {
     newPlant.petalAngle = degToRad(pseudoRandomBetween(prng.next(), 0, 180));
 
     newPlant.operation = "source-over";
+
+    // Some plants are special, as they have more petals than others
     if (newPlant.petalAmount >= newPlant.petalAmountThreshold) {
       newPlant.operation = "screen";
-      newPlant.isSpecial = true
+      newPlant.isSpecial = true;
     }
 
-    // if (environment === "rainbowNight") {
-    //   newPlant.operation = "color-dodge";
-    // }
+    // During the night, every plant is special
+    if (environment === "rainbowNight") {
+      const operation = Math.round(
+        pseudoRandomBetween(prng.next(), 0, 1, false)
+      );
+      newPlant.operation = operation === 0 ? "overlay" : "difference";
+
+      newPlant.stemColor = changeHsl(
+        newPlant.stemColor,
+        55,
+        pseudoRandomBetween(prng.next(), 10, 20)
+      );
+
+      newPlant.isSpecial = true;
+    }
 
     newPlant.y = y;
     newPlant.x = x;
@@ -359,12 +399,13 @@ export default function Plants({ ctx, canvas, prng }) {
     plants.push(newPlant);
   }
 
+  // Draw the linear-gradient background (sky) + the ground
   function drawBackground({
     groundHeight = 0.05,
     colorGrass = "lightgreen",
     colorSky = "lightblue",
     colorGround = "#8B4513",
-    colors = undefined
+    colors = undefined,
   }) {
     let gradient = ctx.createLinearGradient(
       0,
@@ -378,7 +419,7 @@ export default function Plants({ ctx, canvas, prng }) {
       for (let i = 0; i < colors.length; i++) {
         gradient.addColorStop(i / (colors.length - 1), colors[i]);
       }
-    // Basic gradient that consits of two colors
+      // Basic gradient that consits of two colors
     } else {
       gradient.addColorStop(0, colorGrass); // grass
       gradient.addColorStop(1, colorSky); // sky
@@ -396,29 +437,38 @@ export default function Plants({ ctx, canvas, prng }) {
     );
   }
 
+  // Draw the stem for a given plant
   function drawStem(plant, delta) {
     ctx.fillStyle = plant.stemColor || "rgba(255, 255, 255, .25)";
     let stemWidth = (plant.stemWidth / originalCanvasWidth) * canvas.width;
     let stemHeight = (plant.stemHeight / originalCanvasHeight) * canvas.height;
+
     ctx.fillRect(
-      plant.x * canvas.width - stemWidth / 2,
+      parseInt(plant.x * canvas.width - stemWidth / 2),
       plant.y * canvas.height - stemHeight,
-      stemWidth,
+      parseInt(stemWidth),
       stemHeight
     );
 
     let leafY = plant.y * canvas.height - stemHeight * (1 - plant.leafPosition);
     let leafSize = (plant.leafSize / originalCanvasWidth) * canvas.width;
     ctx.beginPath();
-    ctx.moveTo(plant.x * canvas.width, leafY);
-    ctx.lineTo(plant.x * canvas.width - leafSize, leafY - leafSize / 2);
-    ctx.lineTo(plant.x * canvas.width + leafSize, leafY - leafSize / 2);
+    ctx.moveTo(parseInt(plant.x * canvas.width), leafY);
+    ctx.lineTo(
+      parseInt(plant.x * canvas.width) - leafSize,
+      leafY - leafSize / 2
+    );
+    ctx.lineTo(
+      parseInt(plant.x * canvas.width) + leafSize,
+      leafY - leafSize / 2
+    );
     ctx.fill();
 
     if (
       stemHeight <
-      ((plant.stemMaxHeight * originalCanvasHeight) / originalCanvasWidth) *
-        canvas.width
+        ((plant.stemMaxHeight * originalCanvasHeight) / originalCanvasWidth) *
+          canvas.height &&
+      !plant.reachedMaxHeight
     ) {
       plant.stemHeight += plant.stemGrowthSpeed * delta;
     } else {
@@ -428,6 +478,7 @@ export default function Plants({ ctx, canvas, prng }) {
     plant.stemHeightFinal = stemHeight;
   }
 
+  // Draw the center (circle) for a given plant
   function drawCenter(plant, delta) {
     ctx.fillStyle = plant.centerColor || "yellow";
     // ctx.globalCompositeOperation = plant.operation;
@@ -435,8 +486,8 @@ export default function Plants({ ctx, canvas, prng }) {
 
     ctx.beginPath();
     ctx.arc(
-      plant.x * canvas.width,
-      plant.y * canvas.height - plant.stemHeightFinal,
+      parseInt(plant.x * canvas.width),
+      parseInt(plant.y * canvas.height) - plant.stemHeightFinal,
       radiusFinal,
       0,
       2 * Math.PI
@@ -451,12 +502,13 @@ export default function Plants({ ctx, canvas, prng }) {
     ctx.globalCompositeOperation = "source-over";
   }
 
+  // Draw the petals for a given plant
   function drawCirclePetals(plant, delta) {
     ctx.globalCompositeOperation = plant.operation;
     ctx.fillStyle = plant.petalColor || "pink";
 
     if (plant.isSpecial) {
-      ctx.globalAlpha = 1
+      ctx.globalAlpha = 1;
     }
 
     let radiusFinal = (plant.petalRadius / originalCanvasWidth) * canvas.width;
@@ -464,12 +516,12 @@ export default function Plants({ ctx, canvas, prng }) {
     for (let i = 0; i < plant.petalAmount; i++) {
       ctx.beginPath();
       ctx.arc(
-        plant.x * canvas.width +
+        parseInt(plant.x * canvas.width) +
           (radiusFinal + plant.centerRadiusFinal / 2) *
             Math.cos(
               plant.petalAngle + (i * Math.PI) / (plant.petalAmount / 2)
             ),
-        plant.y * canvas.height -
+        parseInt(plant.y * canvas.height) -
           plant.stemHeightFinal +
           (radiusFinal + plant.centerRadiusFinal / 2) *
             Math.sin(
@@ -489,6 +541,7 @@ export default function Plants({ ctx, canvas, prng }) {
     ctx.globalCompositeOperation = "source-over";
   }
 
+  // Draw the sun in the top 25% of the canvas
   function drawSun({ x, y, radius, colorSun = "yellow" }) {
     const radiusFinal = (radius / originalCanvasWidth) * canvas.width;
 
@@ -498,6 +551,8 @@ export default function Plants({ ctx, canvas, prng }) {
     ctx.fill();
   }
 
+  // Generate a balanced color palette with colors that are equally apart from
+  // each other
   function generatePalette(seed, numColors) {
     let palette = [];
     let hue = 360 * seed;
@@ -509,6 +564,8 @@ export default function Plants({ ctx, canvas, prng }) {
     return palette;
   }
 
+  // Extract two colors from an array of colors and make sure
+  // that they are not the same
   function getRandomColors(colors) {
     let color1 = colors[Math.floor(prng.next() * colors.length)];
     let color2 = colors[Math.floor(prng.next() * colors.length)];
@@ -520,6 +577,7 @@ export default function Plants({ ctx, canvas, prng }) {
     return [color2, color1];
   }
 
+  // Generate an array of colors that look like a rainbow
   function generateRainbowColors(numColors) {
     const hueStep = 360 / numColors;
     let hue = 0;
@@ -535,36 +593,50 @@ export default function Plants({ ctx, canvas, prng }) {
     return colors;
   }
 
-  function changeHsl(hslColor, saturationPercent, lightnessPercent = undefined) {
+  // Change the saturation and/or lightness of a given HSL color
+  function changeHsl(
+    hslColor,
+    saturationPercent,
+    lightnessPercent = undefined
+  ) {
     let [hue, saturation, lightness] = hslColor
       .match(/hsl\(\s*(\d+\.?\d*)\s*,\s*(\d+\.?\d*)%\s*,\s*(\d+\.?\d*)%\s*\)/)
       .slice(1)
       .map(Number);
 
     if (lightnessPercent !== undefined) {
-      lightness = lightnessPercent
+      lightness = lightnessPercent;
     }
 
     return `hsl(${hue}, ${saturationPercent}%, ${lightness}%)`;
   }
 
+  // Convert degrees to radians
   function degToRad(degrees) {
     return (degrees * Math.PI) / 180;
   }
 
-  rafId = requestAnimationFrame(animate);
-
-  const reset = () => {
+  // Reset the redrawInMs variable
+  function reset() {
     baseMs = pseudoRandomBetween(prng.next(), 25, baseMsMax, true);
 
-    redrawFactor = pseudoRandomBetween(prng.next(), 0.05, redrawInMsMax, true);
+    redrawFactor = pseudoRandomBetween(
+      prng.next(),
+      0.05,
+      redrawFactorMax,
+      true
+    );
 
+    // When reset is called the first time, redrawInMs has no generated value yet,
+    // that's why it DOES make sense to call it after rAF and before fxFeatures ;)
     redrawInMs = Math.floor(baseMs * redrawFactor);
 
     console.log(`redraw in ${redrawInMs}ms`);
-  };
+  }
 
-  const redraw = () => {
+  // Redraw the whole scene and make sure that the plants are
+  // growing from the ground again
+  function redraw() {
     window.cancelAnimationFrame(rafId);
 
     // Reset some of the plant parameters to enforce a redraw
@@ -595,25 +667,5 @@ export default function Plants({ ctx, canvas, prng }) {
     rafId = requestAnimationFrame(animate);
 
     setTimeout(redraw, redrawInMs);
-  };
-
-  console.log(fxhash);
-
-  reset();
-
-  fxHashFeatures({
-    plants,
-    redrawInMs,
-    plantsAmount,
-    environment
-  });
-  console.log("$fxhashFeatures", window.$fxhashFeatures);
-
-  if (!isFxpreview) {
-    setTimeout(redraw, redrawInMs);
-  } else {
-    setTimeout(() => {
-      fxpreview();
-    }, baseMsMax * redrawInMsMax + 1000);
   }
 }
