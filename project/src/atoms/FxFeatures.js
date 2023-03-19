@@ -1,6 +1,6 @@
 import { inRange } from "../utils/inRange";
 
-export function fxHashFeatures(props) {
+export function FxFeatures(props) {
   const { plants, redrawInMs, plantsAmount, environment } = props;
 
   let specialPlantsAmount = 0;
@@ -29,12 +29,12 @@ export function fxHashFeatures(props) {
     ],
   });
 
-  window.$fxhashFeatures = {
+  $fx.features({
     plantsAmount,
     firstRedraw,
     specialPlantsAmount,
-    environment,
-  };
+    timeOfDay: environment,
+  });
 
-  return window.$fxhashFeatures;
+  return $fx.getFeatures();
 }

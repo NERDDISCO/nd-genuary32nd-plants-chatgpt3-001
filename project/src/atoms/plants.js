@@ -3,11 +3,16 @@ import {
   pseudoRandomBetweenList,
 } from "./../utils/pseudoeRandomBetween";
 import { inRange } from "../utils/inRange";
-import { fxHashFeatures } from "./FxHashFeatures";
+import { FxFeatures } from "./FxFeatures";
+import { FxParams } from "./FxParams";
 
 export default function Plants({ ctx, canvas, prng }) {
   const originalCanvasWidth = 2048;
   const originalCanvasHeight = 2048;
+
+  FxParams();
+
+  console.log($fx.getParams());
 
   let rafId = null;
   let previousTime = 0;
@@ -35,16 +40,21 @@ export default function Plants({ ctx, canvas, prng }) {
     colorSun,
   ] = colors;
 
-  const saturation = pseudoRandomBetween(prng.next(), 18, 20);
+  // const saturation = pseudoRandomBetween(prng.next(), 18, 20);
+  const saturation = $fx.getParam("backgroundSaturation");
   let lightness = pseudoRandomBetween(prng.next(), 25, 65);
 
-  const environment = inRange({
-    currentValue: lightness,
-    ranges: [{ rainbowNight: [25, 26] }, { sunnyDay: [26, 65] }],
-  });
+  // const environment = inRange({
+  //   currentValue: lightness,
+  //   ranges: [{ rainbowMidnight: [25, 26] }, { sunnyNoon: [26, 65] }],
+  // });
 
-  if (environment === "sunnyDay") {
+  const environment = $fx.getParam("timeOfDay");
+
+  if (environment === "Sunny Noon") {
     lightness = pseudoRandomBetween(prng.next(), 55, 65);
+  } else {
+    lightness = pseudoRandomBetween(prng.next(), 26, 30);
   }
 
   colorSun = changeHsl(colorSun, saturation, lightness);
@@ -54,7 +64,7 @@ export default function Plants({ ctx, canvas, prng }) {
 
   let colorsRainbow = undefined;
 
-  if (environment === "rainbowNight") {
+  if (environment === "Rainbow Midnight") {
     colorsRainbow = generateRainbowColors(14);
     for (let i = 0; i < colorsRainbow.length; i++) {
       colorsRainbow[i] = changeHsl(colorsRainbow[i], saturation, lightness);
@@ -70,7 +80,8 @@ export default function Plants({ ctx, canvas, prng }) {
 
   // Plants
   let plants = [];
-  const plantsAmount = pseudoRandomBetween(prng.next(), 1, 8, true);
+  // const plantsAmount = pseudoRandomBetween(prng.next(), 1, 8, true);
+  const plantsAmount = $fx.getParam("plantsAmount");
 
   const petalAmountsMin = pseudoRandomBetween(prng.next(), 2, 4, true);
   const petalAmounts = pseudoRandomBetweenList(
@@ -158,22 +169,22 @@ export default function Plants({ ctx, canvas, prng }) {
   reset();
 
   // Create the features for fxhash
-  fxHashFeatures({
+  FxFeatures({
     plants,
     redrawInMs,
     plantsAmount,
     environment,
   });
-  console.log("$fxhashFeatures", window.$fxhashFeatures);
+  console.log("$fxhashFeatures", $fx.getFeatures());
 
   // Redraw after redrawInMs if preview = 0
-  if (!isFxpreview) {
+  if (!$fx.isPreview) {
     setTimeout(redraw, redrawInMs);
 
-    // Don't redraw if preview = 1 and trigger fxpreview() to take a screenshot
+    // Don't redraw if preview = 1 and trigger capture model of fxhash to take a screenshot
   } else {
     setTimeout(() => {
-      fxpreview();
+      $fx.preview();
     }, baseMsMax * redrawFactorMax + 1000);
   }
 
@@ -332,11 +343,13 @@ export default function Plants({ ctx, canvas, prng }) {
     );
     newPlant.centerColor = changeHsl(
       centerColor,
-      pseudoRandomBetween(prng.next(), 60, 80)
+      pseudoRandomBetween(prng.next(), 60, 80),
+      $fx.getParam("flowerLightness")
     );
     newPlant.petalColor = changeHsl(
       petalColor,
-      pseudoRandomBetween(prng.next(), 90, 100)
+      pseudoRandomBetween(prng.next(), 90, 100),
+      $fx.getParam("flowerLightness")
     );
 
     newPlant.stemGrowthSpeed = pseudoRandomBetween(
@@ -378,7 +391,7 @@ export default function Plants({ ctx, canvas, prng }) {
     }
 
     // During the night, every plant is special
-    if (environment === "rainbowNight") {
+    if (environment === "Rainbow Midnight") {
       const operation = Math.round(
         pseudoRandomBetween(prng.next(), 0, 1, false)
       );
