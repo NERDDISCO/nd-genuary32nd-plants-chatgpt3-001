@@ -30,10 +30,10 @@ export function FxFeatures(props) {
   });
 
   $fx.features({
-    plantsAmount,
-    firstRedraw,
-    specialPlantsAmount,
     timeOfDay: environment,
+    plantsAmount,
+    specialPlantsAmount,
+    firstRedraw,
   });
 
   return $fx.getFeatures();
