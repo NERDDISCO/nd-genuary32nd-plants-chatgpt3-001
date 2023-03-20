@@ -10,17 +10,6 @@ export function FxParams() {
       },
     },
     {
-      id: "backgroundSaturation",
-      name: "Background Saturation %",
-      type: "number",
-      default: 18,
-      options: {
-        min: 10,
-        max: 30,
-        step: 1,
-      },
-    },
-    {
       id: "plantsAmount",
       name: "Plants Amount",
       type: "number",
@@ -36,8 +25,19 @@ export function FxParams() {
       type: "number",
       default: 60,
       options: {
-        min: 50,
+        min: 10,
         max: 90,
+        step: 1,
+      },
+    },
+    {
+      id: "backgroundSaturation",
+      name: "Background Saturation %",
+      type: "number",
+      default: 18,
+      options: {
+        min: 10,
+        max: 30,
         step: 1,
       },
     },

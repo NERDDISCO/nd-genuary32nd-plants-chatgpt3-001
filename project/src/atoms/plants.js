@@ -42,7 +42,8 @@ export default function Plants({ ctx, canvas, prng }) {
 
   // const saturation = pseudoRandomBetween(prng.next(), 18, 20);
   const saturation = $fx.getParam("backgroundSaturation");
-  let lightness = pseudoRandomBetween(prng.next(), 25, 65);
+  // let lightness = pseudoRandomBetween(prng.next(), 25, 65);
+  let lightness;
 
   // const environment = inRange({
   //   currentValue: lightness,
@@ -174,6 +175,7 @@ export default function Plants({ ctx, canvas, prng }) {
     redrawInMs,
     plantsAmount,
     environment,
+    flowerLightness: $fx.getParam("flowerLightness"),
   });
   console.log("$fxhashFeatures", $fx.getFeatures());
 
