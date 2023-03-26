@@ -30,8 +30,6 @@ export function FxFeatures(props) {
     ],
   });
 
-  console.log(flowerLightness);
-
   // prettier-ignore
   const _flowerLightness = inRange({
       currentValue: flowerLightness,
